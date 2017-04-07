@@ -159,7 +159,13 @@ public class ExpressionParser {
 
     // The recursive-descent parsing methods for the various
     // syntactic categories in the grammar given above.
+    
     private ExpressionTree.Node parseAtom() throws SyntaxError, ExpressionTree.NotAVariable {
+        
+        // Atom -> number
+        // Atom -> identifier
+        // Atom -> '(' Expression ')'
+        
         ExpressionTree.Node ret = null;
         switch (currentToken.kind()) {
             case NUMBER:
@@ -169,14 +175,10 @@ public class ExpressionParser {
                 break;
                 
             case IDENTIFIER:
+                //To be quite honest, It was a miracle that this worked for me bc I didnt entirely understand
+                //how the Variable Nodes worked in ExpressionTree, but this works, so I guess I dont need to change it.
                 Token.IdentifierToken iden = (Token.IdentifierToken) currentToken;
                 String ident = iden.name();
-//                if(ExpressionTree.symbols.contains(ident)){
-//                    ret = new ExpressionTree.Number(ExpressionTree.symbols.find(ident));
-//                }
-//                else{
-//                    ret = new ExpressionTree.Variable(ident);
-//                }
                 ret = new ExpressionTree.Variable(ident);
                 getNextToken();
                 break;
@@ -194,14 +196,21 @@ public class ExpressionParser {
     }
 
     private ExpressionTree.Node parseFactor() throws SyntaxError, ExpressionTree.NotAVariable {
+        
+        // Factor -> Atom
+        // Factor -> PreOp Factor
+        // Factor -> Factor PostOp
+        
         Token.Kind k = null;
         ExpressionTree.Node ret = null;
         while (isPreOp(currentToken)) {
             k = currentToken.kind();
             getNextToken();
         }
-        Token temp = currentToken;
+//        Token temp = currentToken;
+        //Doesnt need a temp variable to hold the current token, because currentToken serves as a proper rover when navigating post and preops
         ExpressionTree.Node left = parseAtom();
+        
         if (k != null) {
             switch (k) {
                 case PLUS:
@@ -221,11 +230,12 @@ public class ExpressionParser {
         } else {
             ret = left;
         }
-        while (isPostOp(temp)) {
-            if(temp.kind().equals(Token.Kind.PLUS_PLUS)){
+        
+        while (isPostOp(currentToken)) {
+            if(currentToken.kind().equals(Token.Kind.PLUS_PLUS)){
                 ret = new ExpressionTree.PostIncrement(ret);
             }
-            else if(temp.kind().equals(Token.Kind.MINUS_MINUS)){
+            else if(currentToken.kind().equals(Token.Kind.MINUS_MINUS)){
                 ret = new ExpressionTree.PostDecrement(ret);
             }
             getNextToken();
@@ -234,9 +244,14 @@ public class ExpressionParser {
     }
 
     private ExpressionTree.Node parseTerm() throws SyntaxError, ExpressionTree.NotAVariable {
+        
+        // Term -> Factor
+        // Term -> Term MulOp Factor
+        
         ExpressionTree.Node ret = parseFactor();
+        
         while (isMulOp(currentToken)) {
-            Token temp = currentToken;
+            Token temp = currentToken; ////Needs temp because currentToken changes when parsing the Factor 3 lines down
             getNextToken();
             ExpressionTree.Node left = ret;
             ExpressionTree.Node right = parseFactor();
@@ -257,9 +272,14 @@ public class ExpressionParser {
     }
 
     private ExpressionTree.Node parseSimpleExpression() throws SyntaxError, ExpressionTree.NotAVariable {
+        
+        // SimpleExpression -> Term
+        // SimpleExpression -> SimpleExpression AddOp Term
+        
         ExpressionTree.Node ret = parseTerm();
+        
         while (isAddOp(currentToken)) {
-            Token temp = currentToken;
+            Token temp = currentToken; //Needs temp because currentToken changes when parsing the Term 3 lines down
             getNextToken();
             ExpressionTree.Node left = ret;
             ExpressionTree.Node right = parseTerm();
@@ -273,9 +293,14 @@ public class ExpressionParser {
     }
 
     private ExpressionTree.Node parseExpression() throws SyntaxError, ExpressionTree.NotAVariable {
+        
+        // Expression -> SimpleExpression
+        // Expression -> Expression AssignOp SimpleExpression
+        
         ExpressionTree.Node ret = parseSimpleExpression();
+        
         while (isAssignOp(currentToken)) {
-            Token temp = currentToken;
+            Token temp = currentToken; //Needs temp because currentToken changes when parsing the SimpleExpression 3 lines down
             getNextToken();
             ExpressionTree.Node left = ret;
             ExpressionTree.Node right = parseSimpleExpression();
@@ -298,17 +323,14 @@ public class ExpressionParser {
                 case MODULO_ASSIGN:
                     ret = new ExpressionTree.ModBy(left, right);
                     break;
-                default:
-                    break;//shouldnt get here
             }
         }
         return ret;
     }
 
-    //Current problems:
-    //Parse only returns 1 node, needs to return
-    
     public ExpressionTree.Node parse(String s) throws SyntaxError, ExpressionTree.NotAVariable, ExpressionTree.UndefinedVariable {
+        //Parse returns a node which is the head of the expression tree. All other parse methods return a node aswell.
+        
         scanner = new ExpressionScanner(s);
         getNextToken();
         ExpressionTree.Node parseExpression = parseExpression();

@@ -7,8 +7,9 @@ import java.util.Scanner;
  *  4/5/17
  */
 
-//Im sorry for the messy code with little to no comments. I will try to get a version with comments / final bug fixes up soon.
-//But if you need something to grade, this is it.
+//Okay this version should work properly. The only bug I can find is that when
+//using postops, the output will not show and calculate the updated variable
+//properly, but it will update properly in the hashTable after evaluate is called
 
 public class HW17_Reiss {
 
